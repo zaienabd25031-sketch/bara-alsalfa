@@ -107,5 +107,5 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;;
+const socket = io('http://localhost:3000');
 http.listen(PORT, () => { console.log(`الخادم يشتغل على بورت: ${PORT}`); });
