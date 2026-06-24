@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>برا السالفة - الكلاسيكية</title>
+    <style>
+        /* المتغيرات للثيمات */
+        :root {
+            --bg-color: #1a1a2e;
+            --container-bg: #16213e;
+            --text-color: #ecf0f1;
+            --primary-color: #e94560;
+            --btn-bg: #0f3460;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); color: var(--text-color); text-align: center; margin: 0; padding: 10px; overflow-x: hidden; transition: 0.5s; }
+        .container { max-width: 500px; margin: 20px auto; background: var(--container-bg); padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); border: 2px solid var(--primary-color); transition: 0.5s; }
+        h1 { color: var(--primary-color); text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        input, select, button { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; font-family: inherit; font-weight: bold; }
+        button { background-color: var(--btn-bg); color: white; cursor: pointer; transition: 0.3s; border: 1px solid var(--primary-color); }
+        button:hover { background-color: var(--primary-color); transform: scale(1.05); }
+        
+        .top-controls { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
+        .top-controls button, .top-controls select { width: 100%; padding: 10px; font-size: 14px; }
+
+        .host-only { display: none; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-top: 15px; }
+        #lobbyDiv, #gameDiv, #votingDiv, #finalResultDiv { display: none; }
+        ul { list-style-type: none; padding: 0; }
+        li { background: var(--primary-color); margin: 5px 0; padding: 10px; border-radius: 5px; color: white; }
+        
+        .secret-card { background: var(--bg-color); border: 3px dashed var(--primary-color); padding: 30px; border-radius: 10px; margin: 20px auto; width: 80%; cursor: pointer; user-select: none; transition: 0.3s; box-shadow: inset 0 0 15px rgba(0,0,0,0.5); }
+        .secret-card:active { background: var(--primary-color); }
+        .instruction-text { color: #f1c40f; font-size: 18px; pointer-events: none; }
+        
+        .timer { font-size: 50px; color: var(--primary-color); font-weight: bold; margin: 15px 0; text-shadow: 0 0 10px var(--primary-color); }
+        .emoji-float { position: fixed; bottom: -50px; font-size: 40px; animation: floatUp 3s ease-in-out forwards; pointer-events: none; z-index: 1000; }
+        @keyframes floatUp { 0% { bottom: -50px; opacity: 1; transform: translateX(0) scale(1); } 50% { transform: translateX(30px) scale(1.5); } 100% { bottom: 100vh; opacity: 0; transform: translateX(-30px) scale(1); } }
+        .reactions-bar { display: flex; justify-content: center; gap: 15px; margin-top: 20px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 50px; }
+        .reactions-bar button { width: 50px; height: 50px; border-radius: 50%; font-size: 24px; padding: 0; margin: 0; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="mainContainer">
+        
+        <!-- أزرار التحكم العلوية (الثيمات، القوانين، كتم الصوت) -->
+        <div class="top-controls">
+            <select id="themeSelect" onchange="changeTheme()">
+                <option value="dark">🌙 ثيم ليلي (الأساسي)</option>
+                <option value="light">☀️ ثيم نهاري</option>
+                <option value="desert">🏜️ ثيم صحراوي</option>
+                <option value="ocean">🌊 ثيم بحري</option>
+            </select>
+            <button onclick="showRules()" style="background-color: #27ae60; border-color:#2ecc71;">📜 القوانين</button>
+            <button id="muteBtn" onclick="toggleMute()" style="background-color: #8e44ad; border-color:#9b59b6;">🔊 الصوت شغال</button>
+        </div>
+
+        <h1>🕵️‍♂️ برا السالفة</h1>
+
+        <!-- شاشة الدخول -->
+        <div id="loginDiv">
+            <input type="text" id="playerName" placeholder="اكتب اسمك هنانة...">
+            <input type="text" id="roomCode" placeholder="رمز الغرفة">
+            <button onclick="joinRoom()">🔥 طب للغرفة</button>
+        </div>
+
+        <!-- اللوبي -->
+        <div id="lobbyDiv">
+            <h2>رمز الغرفة: <span id="displayRoomCode" style="color:var(--primary-color);"></span></h2>
+            <h3>الولد الموجودين بالغرفة:</h3>
+            <ul id="playersList"></ul>
+
+            <div id="hostControls" class="host-only">
+                <h3>👑 لوحة تحكم الزعيم:</h3>
+                <select id="categorySelect">
+                    <option value="أماكن عامة">🌍 أماكن عامة</option>
+                    <option value="دوائر حكومية">🏛️ دوائر حكومية</option>
+                    <option value="رياضة وملاعب">⚽ رياضة وملاعب</option>
+                    <option value="نقل ومواصلات">🚌 نقل ومواصلات</option>
+                    <option value="أكلات ومطاعم">🍲 أكلات ومطاعم</option>
+                    <option value="أماكن تاريخية">🏺 أماكن تاريخية</option>
+                    <option value="مهن وحرف">🛠️ مهن وحرف</option>
+                    <option value="أكشن ومغامرات">⚔️ أكشن ومغامرات</option>
+                </select>
+                <select id="timeSelect">
+                    <option value="1">⏱️ تجربة (دقيقة وحدة)</option>
+                    <option value="3" selected>⏱️ 3 دقايق</option>
+                    <option value="5">⏱️ 5 دقايق</option>
+                    <option value="8">⏱️ 8 دقايق</option>
+                </select>
+                <button onclick="startGame()" style="background-color: var(--primary-color);">🚀 بلّش اللعب</button>
+            </div>
+            <p id="waitingMsg" style="color:#f1c40f;">ننتظر الزعيم يبلّش الجولة...</p>
+        </div>
+
+        <!-- شاشة اللعب -->
+        <div id="gameDiv">
+            <div class="timer" id="timerDisplay">00:00</div>
+            
+            <div class="secret-card" onmousedown="showRole()" onmouseup="hideRole()" ontouchstart="showRole()" ontouchend="hideRole()">
+                <p id="revealInstruction" class="instruction-text">👀 اضغط مطولاً هنانة حتى تشوف السالفة</p>
+                <div id="hiddenRoleData" style="display: none;">
+                    <div id="roleDisplay" style="font-size: 24px; font-weight: bold; color:white;"></div>
+                    <div id="placeDisplay" style="font-size: 20px; color:#f1c40f; margin-top:10px;"></div>
+                </div>
+            </div>
+            
+            <p style="font-size: 14px; opacity: 0.7;">(دير بالك تخلي أحد يشوف شاشتك!)</p>
+
+            <div class="reactions-bar">
+                <button onclick="sendReaction('😂')">😂</button>
+                <button onclick="sendReaction('😲')">😲</button>
+                <button onclick="sendReaction('🤔')">🤔</button>
+                <button onclick="sendReaction('🔥')">🔥</button>
+            </div>
+        </div>
+
+        <!-- شاشة التصويت -->
+        <div id="votingDiv">
+            <h1 style="color: #f1c40f;">⏰ خلص الوكت!</h1>
+            <h2>أجا وكت الحساب ⚖️</h2>
+            <p>منو تحسّه "برا السالفة"؟</p>
+            <div id="votingList"></div>
+            <p id="voteWaitMsg" style="display:none; color:#2ecc71;">وصل صوتك.. ننتظر البقية ⏳</p>
+        </div>
+
+        <!-- شاشة النتيجة -->
+        <div id="finalResultDiv">
+            <h1 id="winnerTitle" style="font-size: 30px; margin-bottom: 5px;"></h1>
+            <h2 id="spyRevealText" style="color: #f1c40f; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px;"></h2>
+            <button onclick="requestReset()" style="margin-top: 20px;">🔄 العب جولة ثانية</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let myRoomCode = '';
+        let localStream;
+        const peerConnections = {};
+        let isMuted = false;
+
+        // --- وظائف الأزرار الجديدة ---
+        function changeTheme() {
+            const theme = document.getElementById('themeSelect').value;
+            const root = document.documentElement;
+            if(theme === 'dark') { root.style.setProperty('--bg-color', '#1a1a2e'); root.style.setProperty('--container-bg', '#16213e'); root.style.setProperty('--text-color', '#ecf0f1'); root.style.setProperty('--primary-color', '#e94560'); root.style.setProperty('--btn-bg', '#0f3460'); }
+            else if(theme === 'light') { root.style.setProperty('--bg-color', '#f4f6f8'); root.style.setProperty('--container-bg', '#ffffff'); root.style.setProperty('--text-color', '#2c3e50'); root.style.setProperty('--primary-color', '#c0392b'); root.style.setProperty('--btn-bg', '#2980b9'); }
+            else if(theme === 'desert') { root.style.setProperty('--bg-color', '#f4a460'); root.style.setProperty('--container-bg', '#fff8dc'); root.style.setProperty('--text-color', '#5c4033'); root.style.setProperty('--primary-color', '#d2691e'); root.style.setProperty('--btn-bg', '#8b4513'); }
+            else if(theme === 'ocean') { root.style.setProperty('--bg-color', '#0077be'); root.style.setProperty('--container-bg', '#e0f7fa'); root.style.setProperty('--text-color', '#004d40'); root.style.setProperty('--primary-color', '#00838f'); root.style.setProperty('--btn-bg', '#006064'); }
+        }
+
+        function showRules() {
+            alert("📜 قوانين اللعبة:\n\n1. اللعبة تختار مكان سري (سالفة) وتدزه لكل اللاعبين.\n2. اكو لاعب واحد بس راح تطلعله رسالة (أنت برا السالفة) وما يعرف المكان.\n3. اللاعبين يبدون يسألون بعض أسئلة غامضة تثبت انهم يعرفون المكان بدون ما يفضحوه للجاسوس.\n4. الجاسوس يركز بأسئلتهم ويحاول يحزر المكان، وبنفس الوقت يجاوب بذكاء حتى لا ينصاد.\n5. يخلص الوكت ونصوت، اذا صدنا الجاسوس نفوز، واذا فلت أو حزر المكان هو يفوز!");
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const audios = document.querySelectorAll('audio');
+            audios.forEach(audio => audio.muted = isMuted);
+            
+            const btn = document.getElementById('muteBtn');
+            btn.innerText = isMuted ? '🔇 الصوت مكتوم' : '🔊 الصوت شغال';
+            btn.style.backgroundColor = isMuted ? '#c0392b' : '#8e44ad';
+        }
+        // ------------------------------
+
+        async function joinRoom() {
+            const name = document.getElementById('playerName').value;
+            myRoomCode = document.getElementById('roomCode').value;
+            if (name && myRoomCode) {
+                try { localStream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch (e) { console.log("بدون مايك"); }
+                socket.emit('joinRoom', { playerName: name, roomCode: myRoomCode });
+                document.getElementById('loginDiv').style.display = 'none';
+                document.getElementById('lobbyDiv').style.display = 'block';
+                document.getElementById('displayRoomCode').innerText = myRoomCode;
+            }
+        }
+
+        socket.on('updatePlayers', (data) => {
+            const list = document.getElementById('playersList');
+            list.innerHTML = '';
+            const isHost = (socket.id === data.hostId);
+            document.getElementById('hostControls').style.display = isHost ? 'block' : 'none';
+            document.getElementById('waitingMsg').style.display = isHost ? 'none' : 'block';
+            data.players.forEach(p => {
+                const li = document.createElement('li');
+                li.innerText = p.name;
+                if (p.id === data.hostId) li.innerHTML += ' 👑';
+                list.appendChild(li);
+            });
+        });
+
+        function startGame() { socket.emit('startGame', { roomCode: myRoomCode, category: document.getElementById('categorySelect').value, minutes: document.getElementById('timeSelect').value }); }
+
+        socket.on('gameResult', (data) => {
+            document.getElementById('lobbyDiv').style.display = 'none';
+            document.getElementById('finalResultDiv').style.display = 'none';
+            document.getElementById('gameDiv').style.display = 'block';
+            document.getElementById('roleDisplay').innerText = data.role;
+            document.getElementById('placeDisplay').innerText = data.place;
+        });
+
+        function showRole() { document.getElementById('revealInstruction').style.display = 'none'; document.getElementById('hiddenRoleData').style.display = 'block'; }
+        function hideRole() { document.getElementById('revealInstruction').style.display = 'block'; document.getElementById('hiddenRoleData').style.display = 'none'; }
+
+        socket.on('timerUpdate', (timeLeft) => { let m = Math.floor(timeLeft / 60); let s = timeLeft % 60; document.getElementById('timerDisplay').innerText = `${m}:${s < 10 ? '0'+s : s}`; });
+
+        function sendReaction(emoji) { socket.emit('sendReaction', { roomCode: myRoomCode, emoji }); }
+        socket.on('receiveReaction', (emoji) => {
+            const el = document.createElement('div'); el.innerText = emoji; el.className = 'emoji-float';
+            el.style.left = Math.random() * 80 + 10 + 'vw'; document.body.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        });
+
+        socket.on('startVoting', (players) => {
+            document.getElementById('gameDiv').style.display = 'none';
+            document.getElementById('votingDiv').style.display = 'block';
+            document.getElementById('voteWaitMsg').style.display = 'none';
+            const list = document.getElementById('votingList');
+            list.innerHTML = '';
+            players.forEach(p => {
+                if (p.id !== socket.id) {
+                    const btn = document.createElement('button');
+                    btn.innerText = `👈 أصوت ضد: ${p.name}`;
+                    btn.onclick = () => submitVote(p.id, btn);
+                    list.appendChild(btn);
+                }
+            });
+        });
+
+        function submitVote(targetId, btnElement) { socket.emit('submitVote', { roomCode: myRoomCode, targetId }); document.getElementById('votingList').innerHTML = ''; document.getElementById('voteWaitMsg').style.display = 'block'; }
+
+        socket.on('finalResult', (data) => {
+            document.getElementById('votingDiv').style.display = 'none';
+            document.getElementById('finalResultDiv').style.display = 'block';
+            document.getElementById('winnerTitle').innerText = data.winnerMsg;
+            document.getElementById('spyRevealText').innerText = `الجاسوس الحقيقي كان: ${data.spyName} 🕵️‍♂️!`;
+        });
+
+        function requestReset() { socket.emit('resetGame', myRoomCode); }
+        socket.on('goToLobby', () => { document.getElementById('finalResultDiv').style.display = 'none'; document.getElementById('gameDiv').style.display = 'none'; document.getElementById('lobbyDiv').style.display = 'block'; document.getElementById('timerDisplay').innerText = "00:00"; });
+
+        function createPeerConnection(targetId) {
+            const peer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            peerConnections[targetId] = peer;
+            if (localStream) localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+            peer.ontrack = (event) => {
+                let audio = document.getElementById('audio-' + targetId);
+                if (!audio) { 
+                    audio = document.createElement('audio'); 
+                    audio.id = 'audio-' + targetId; 
+                    audio.autoplay = true; 
+                    audio.muted = isMuted; // ربط الصوت بحالة الزر
+                    document.body.appendChild(audio); 
+                }
+                audio.srcObject = event.streams[0];
+            };
+            peer.onicecandidate = (event) => { if (event.candidate) socket.emit('webrtc-ice', { target: targetId, candidate: event.candidate }); };
+            return peer;
+        }
+        socket.on('user-joined', async (userId) => { const peer = createPeerConnection(userId); const offer = await peer.createOffer(); await peer.setLocalDescription(offer); socket.emit('webrtc-offer', { target: userId, sdp: offer }); });
+        socket.on('webrtc-offer', async (data) => { const peer = createPeerConnection(data.sender); await peer.setRemoteDescription(new RTCSessionDescription(data.sdp)); const answer = await peer.createAnswer(); await peer.setLocalDescription(answer); socket.emit('webrtc-answer', { target: data.sender, sdp: answer }); });
+        socket.on('webrtc-answer', async (data) => { const peer = peerConnections[data.sender]; if (peer) await peer.setRemoteDescription(new RTCSessionDescription(data.sdp)); });
+        socket.on('webrtc-ice', async (data) => { const peer = peerConnections[data.sender]; if (peer) await peer.addIceCandidate(new RTCIceCandidate(data.candidate)); });
+    </script>
+</body>
+</html>
